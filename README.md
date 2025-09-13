@@ -14,7 +14,7 @@
   </a>
 </div>
 <div align="center">
-  <img src="tdd_advantage.pnf" width="100%"/>
+  <img src="tdd_advantage.pdf" width="100%"/>
   
 </div>
 
