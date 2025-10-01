@@ -1,27 +1,5 @@
 <div align="center">
-
-<h1> Generating Full-Stack Web Applications from Requirements Via Multi-Agent Test-Driven Development </h1>
-
-    
-Yuxuan Wan<sup>1*</sup>, Tingshuo Liang<sup>1*</sup>, Jiakai Xu<sup>2</sup>, Jingyu Xiao<sup>1</sup>, Yintong Huo<sup>3✉</sup>,  
-Michael R. Lyu<sup>1</sup>
-<br>
-<sup>1</sup>The Chinese University of Hong Kong, <sup>2</sup>Columbia University in the City of New York, <sup>3</sup>Singapore Management University
-<br>
-<sup>*</sup>Equal contribution  <sup>✉</sup>Corresponding author
-
-<a href="">
-    <img
-      src="https://img.shields.io/badge/arXiv-Paper-red?logo=arxiv&logoColor=red"
-      alt="Paper on arXiv"
-    />
-  </a>
-  <a href="">
-    <img 
-        src="https://img.shields.io/badge/HF-Demo-yellow?logo=huggingface&logoColor=yellow" 
-        alt="Huggingface Demo"
-    />
-  </a>
+<h1> Test-Driven-Development: Generating Full-Stack Web Applications from Requirements</h1>
 </div>
 <div align="center">
   <img src="tdd_advantage.jpg" width="80%"/>
@@ -31,19 +9,81 @@ Michael R. Lyu<sup>1</sup>
 ## Abstract
 Developing full-stack web applications is complex and time-intensive, demanding proficiency across diverse technologies and frameworks. Although recent advances in multimodal large language models (MLLMs) enable automated webpage generation from visual inputs, current solutions remain limited to front-end tasks and fail to deliver fully functional applications. In this work, we introduce TDDev, the first test-driven development (TDD)-enabled LLM-agent framework for end-to-end full-stack web application generation. Given a natural language description or design image, TDDev automatically derives executable test cases, generates front-end and back-end code, simulates user interactions, and iteratively refines the implementation until all requirements are satisfied. Our framework addresses key challenges in full-stack automation, including underspecified user requirements, complex interdependencies among multiple files, and the need for both functional correctness and visual fidelity. Through extensive experiments on diverse application scenarios, TDDev achieves a 14.4% improvement on overall accuracy compared to state-of-the-art baselines, demonstrating its effectiveness in producing reliable, high-quality web applications without requiring manual intervention.
 
-**TODO List**
-- [ ] Release Code Implementation 
-- [ ] Release HuggingFace Dataset
+## Setup and Installation
+Note: macOS is currently the only supported OS.
+1. **Clone the repository**
+2. **Create a conda environment and install Python dependencies:**
+    ```bash
+   conda create -n TDD python=3.12.11
+   conda activate TDD
+   pip install -r requirements.txt
+    ```
+3. **Install Playwright:**
+    ```bash
+   playwright install chromium --with-deps
+   ```
+4. **Install Node.js**
+
+   1. Visit the [Node.js Download Page](https://nodejs.org/en/download/)
+   2. Download the "LTS" (Long Term Support) version
+   3. Run the installer, accepting the default settings
+   4. Verify Node.js is properly installed:
+        1. Open Terminal
+        2. Type this command:
+           ```bash
+           echo $PATH
+           ```
+        3. Look for `/usr/local/bin` in the output
 
 
-## More Projects on MLLM for Web/Code Generation
-- [WebPAI (Web Development Powered by AI)](https://github.com/WebPAI) released a set of research resources and datasets for webpage generation studies, aiming to build an AI platform for more reliable and practical automated webpage generation.
+5. **Install Package Manager (pnpm)**:
 
-- [Awesome-Multimodal-LLM-for-Code](https://github.com/xjywhu/Awesome-Multimodal-LLM-for-Code) maintains a comprehensive list of papers on methods, benchmarks, and evaluation for code generation under multimodal scenarios.
+   ```bash
+   cd bolt.diy
+   npm install -g pnpm
+   ```
+    If you some permission errors on this step, you may try sudo:
+    ```bash
+    cd bolt.diy
+    sudo npm install -g pnpm
+    ```
 
 
-## Acknowledgements
+6. **Install Project Dependencies**:
 
-This project builds upon several outstanding open-source efforts. We would like to thank the authors and contributors of the following projects: [Bolt].diy](https://github.com/stackblitz-labs/bolt.diy), [Browser-Use](https://github.com/browser-use/browser-use)
+   ```bash
+   pnpm install
+   ```
+
+## Configuring API Keys and Providers
+
+Set API keys and base URLs in the `bolt.diy/.env.local` file.
+- If you want to use `ChatGPT-4.1`, you need to set the following environment variables:
+`OPENAI_API_KEY`
+- If you want to use `Claude-4-Sonnet`, you need to set the following environment variables:
+`ANTHROPIC_API_KEY`
+- If you want to use `Qwen2.5-VL` or `Deepseek-V3.1`, you need to set the following environment variables:
+`TOGETHER_API_BASE_URL`,`TOGETHER_API_KEY`
+
+## Start the Application
+1. **Start the development agent server:**
+   ```bash
+   cd bolt.diy
+   pnpm run dev
+   ```
+    - Open the application by accessing the URL shown in the terminal with a local browser
+    - **It's strongly suggested to use [Google Chrome Canary](https://www.google.com/chrome/canary/) to access the application.**
+    - **You must keep the browser window open throughout development.**
+    - Refresh if you encounter a blank page.
+
+
+2. **Start the client:**
+    ```bash
+    cd ../client
+    python app.py
+   ```
+   Then, access the client webpage with your browser by accessing the URL shown in the terminal.
+
+
 
 

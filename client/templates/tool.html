@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text Generation Tool</title>
+  <style>
+    :root {
+      --bg: #f7f7fb;
+      --panel: #ffffff;
+      --panel-2: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-2: #1d4ed8;
+      --ring: rgba(37, 99, 235, 0.25);
+      --success: #16a34a;
+      --danger: #e11d48;
+      --warning: #f59e0b;
+      --border: rgba(15, 23, 42, 0.08);
+      --shadow: rgba(2, 6, 23, 0.06);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary) 0%, #60a5fa 100%);
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25);
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px var(--shadow);
+      overflow: hidden;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      background: #fafafa;
+      align-items: center;
+    }
+
+    .control {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    select, button {
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+      padding: 0 12px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s, transform .05s;
+    }
+
+    select:focus, button:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px var(--ring);
+    }
+
+    select:disabled, button:disabled, textarea:disabled {
+      background-color: #f5f5f5 !important;
+      color: #999 !important;
+      cursor: not-allowed !important;
+      opacity: 0.6 !important;
+      border-color: #ddd !important;
+    }
+
+    .disabled-control {
+      background-color: #f5f5f5 !important;
+      color: #999 !important;
+      cursor: not-allowed !important;
+      opacity: 0.6 !important;
+      border-color: #ddd !important;
+    }
+
+    /* 全屏加载覆盖层 */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: white;
+      margin-top: 20px;
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    /* Clear Cache 按钮样式 */
+    .clear-cache-btn {
+      background-color: var(--danger);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      z-index: 10;
+    }
+
+    .clear-cache-btn:hover {
+      background-color: #dc2626;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .clear-cache-btn:disabled {
+      background-color: #9ca3af;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 220px;
+      resize: vertical;
+      padding: 16px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .editor {
+      padding: 16px;
+      display: flex;
+      gap: 16px;
+    }
+
+    .split-left {
+      flex: 0 0 70%;
+      max-width: 70%;
+    }
+
+    .split-right {
+      flex: 0 0 30%;
+      max-width: 30%;
+      display: flex;
+      align-items: stretch;
+      padding-right: 8px;
+    }
+
+    .preview {
+      display: block;
+      position: relative;
+      width: 100%;
+      min-height: 220px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #ffffff;
+      overflow: hidden;
+      padding: 8px;
+    }
+
+    .preview img {
+      display: none;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #f3f4f6;
+    }
+
+    .upload-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background-color .15s ease-in-out;
+    }
+
+    .upload-placeholder:hover { background: #fafafa; }
+
+    .upload-icon {
+      width: 40px;
+      height: 40px;
+      color: #9ca3af;
+    }
+
+    .remove-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: #374151;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px var(--shadow);
+      display: none;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px 16px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .primary-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 16px;
+      background: linear-gradient(180deg, var(--primary) 0%, var(--primary-2) 100%);
+      color: #ffffff;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.25);
+    }
+
+    .primary-btn:active { transform: translateY(1px); }
+    .primary-btn[disabled] { opacity: .6; cursor: not-allowed; }
+
+    /* lighter blue style for Generate Directly */
+    .secondary-btn {
+      background: linear-gradient(180deg, #04097c 0%, #1611dd 100%);
+      color: #ffffff;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 16px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      min-height: 80px;
+      white-space: pre-wrap;
+      line-height: 1.7;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 9px;
+      flex: 1;
+    }
+
+    .left-col .result { margin-top: 0; }
+
+    .loading {
+      opacity: 0.8;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.5; }
+      50% { opacity: 1; }
+      100% { opacity: 0.5; }
+    }
+
+    /* Result + Sidebar layout */
+    .main {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .left-col {
+      flex: 0 0 60%;
+      max-width: 60%;
+      display: flex;
+    }
+
+    .right-col {
+      flex: 1;
+      max-width: 40%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px var(--shadow);
+      padding: 16px;
+    }
+
+    /* disabled card look */
+    .card.disabled {
+      filter: grayscale(1);
+      opacity: 0.6;
+    }
+
+    .card h3 {
+      margin: 0 0 12px 0;
+      font-size: 14px;
+      color: #111827;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .form-item label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+    .form-item input[type="text"] {
+      width: 100%;
+      height: 36px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0 10px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      font-size: 14px;
+      color: var(--text);
+      background: #fff;
+    }
+
+    .state-ok { border-color: #16a34a !important; box-shadow: 0 0 0 3px rgba(22,163,74,0.12); }
+    .state-warn { border-color: #f59e0b !important; box-shadow: 0 0 0 3px rgba(245,158,11,0.12); }
+    .state-error { border-color: #e11d48 !important; box-shadow: 0 0 0 3px rgba(225,29,72,0.12); }
+
+    .small-btn {
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, var(--primary) 0%, var(--primary-2) 100%);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .status-box {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      max-height: 280px;
+      overflow: auto;
+      font-size: 12px;
+    }
+
+    /* Status pretty view */
+    .status-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .progress-ring {
+      position: relative;
+      width: 52px;
+      height: 52px;
+      flex: 0 0 52px;
+    }
+
+    .progress-ring svg { display: block; transform: rotate(-90deg); }
+    .progress-ring .bg { stroke: #e5e7eb; }
+    .progress-ring .fg { stroke: var(--primary); transition: stroke-dashoffset .3s ease; }
+    .progress-ring .label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 10px;
+      color: #111827;
+    }
+
+    .status-items { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+    .status-item { font-size: 12px; color: #374151; }
+    .status-item b { color: #111827; }
+    .substats { font-size: 11px; margin-left: 12px; color: #4b5563; }
+    .substats .row { display: flex; gap: 8px; }
+    .muted { color: var(--muted); }
+    .codebox {
+      margin-top: 8px;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      white-space: pre-wrap;
+      font-size: 11px;
+    }
+
+    @media (max-width: 640px) {
+      .main { flex-direction: column; }
+      .left-col, .right-col { max-width: 100%; flex: 0 0 100%; }
+    }
+
+    .status {
+      display: none;
+      margin-left: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .status.show { display: inline; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .actions { flex-direction: column; align-items: stretch; }
+      .control { width: 100%; }
+      select, button { width: 100%; }
+      .editor { flex-direction: column; }
+      .split-left, .split-right { flex: 0 0 100%; max-width: 100%; }
+      .preview { max-height: 240px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+<!--      <div class="logo" aria-hidden="true"></div>-->
+      <div class="title">Test Driven Development</div>
+      <span class="badge" id="conn-badge">Demo</span>
+    </div>
+
+    <div class="panel">
+      <form id="gen-form">
+        <div class="toolbar">
+          <div class="control">
+            <label for="model">Model</label>
+            <select id="model" name="model" aria-label="Select model">
+              <option value="openai">ChatGPT-4.1</option>
+              <option value="claude">Claude-4-Sonnet</option>
+              <option value="qwen">Qwen2.5-VL</option>
+              <option value="deepseek">Deepseek-V3.1</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="image">Image</label>
+            <input id="image" name="image" type="file" accept="image/*" aria-label="Upload image" />
+          </div>
+        </div>
+
+        <div class="editor">
+          <div class="split-left">
+            <div style="position: relative;">
+              <textarea id="prompt" name="prompt" placeholder="Type your prompt here..." spellcheck="false"></textarea>
+              <button type="button" class="clear-cache-btn" id="clear-cache-btn" style="position: absolute; top: 8px; right: 8px; display: none; z-index: 1000;">
+                <span>Clear Cache</span>
+              </button>
+            </div>
+          </div>
+          <div class="split-right">
+            <div class="preview" id="image-preview">
+              <div class="upload-placeholder" id="upload-placeholder" aria-label="Click to upload">
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M4 16.5C2.89543 16.5 2 15.6046 2 14.5C2 13.3954 2.89543 12.5 4 12.5H5C5.55228 12.5 6 12.0523 6 11.5C6 8.46243 8.46243 6 11.5 6C13.4518 6 15.1602 6.96686 16.1357 8.44623C16.3091 8.70968 16.6087 8.86667 16.9308 8.86667H17.5C19.9853 8.86667 22 10.8819 22 13.3667C22 15.8519 19.9853 17.8667 17.5 17.8667H16.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M12 14V21M12 14L9.5 16.5M12 14L14.5 16.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <div>Click here to upload a picture</div>
+              </div>
+              <img id="preview-img" alt="Preview" />
+              <button type="button" class="remove-btn" id="remove-image" aria-label="Remove image">Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <div class="hint">Hint: The picture is optinal</div>
+          <div>
+            <button type="submit" class="primary-btn" id="submit-btn">
+              <span id="btn-text">Generate</span>
+            </button>
+            <button type="button" class="primary-btn secondary-btn" id="submit-btn-v1" style="margin-left:8px;">
+              <span>Generate Directly (Legacy)</span>
+            </button>
+            <span class="status" id="status-text">Generating...</span>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="main">
+      <div class="left-col">
+        <div class="result" id="result" aria-live="polite"></div>
+      </div>
+      <div class="right-col">
+        <div class="card" id="config-card">
+          <h3>Config</h3>
+          <div class="form-row">
+            <div class="form-item">
+              <label for="cfg-parallel">Parallel</label>
+              <input type="text" id="cfg-parallel" inputmode="numeric" pattern="\\d*" autocomplete="off" />
+            </div>
+            <div class="form-item">
+              <label for="cfg-round">Round Limit</label>
+              <input type="text" id="cfg-round" inputmode="numeric" pattern="\\d*" autocomplete="off" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-item">
+              <label for="cfg-wait">Max Time</label>
+              <input type="text" id="cfg-wait" inputmode="numeric" pattern="\\d*" autocomplete="off" />
+            </div>
+            <div class="form-item" style="display:flex; align-items:flex-end;">
+              <button type="button" class="small-btn" id="cfg-apply">Config</button>
+            </div>
+          </div>
+          <div id="cfg-message" class="hint"></div>
+        </div>
+
+        <div class="card" id="status-card">
+          <h3>Status</h3>
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+            <button type="button" class="small-btn" id="status-update">Update</button>
+          </div>
+          <div class="status-box" id="status-box">Click Update to fetch status.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>© <span id="year"></span> Text Driven Development Demo</div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('gen-form');
+    const promptEl = document.getElementById('prompt');
+    const modelEl = document.getElementById('model');
+    const resultEl = document.getElementById('result');
+    const rightCol = document.querySelector('.right-col');
+    const btn = document.getElementById('submit-btn');
+    const btnText = document.getElementById('btn-text');
+    const statusText = document.getElementById('status-text');
+    const btnV1 = document.getElementById('submit-btn-v1');
+    const yearEl = document.getElementById('year');
+    const imageInput = document.getElementById('image');
+    const imagePreview = document.getElementById('image-preview');
+    const previewImg = document.getElementById('preview-img');
+    const uploadPlaceholder = document.getElementById('upload-placeholder');
+    const removeBtn = document.getElementById('remove-image');
+    const clearCacheBtn = document.getElementById('clear-cache-btn');
+    let imageBase64 = '';
+
+    yearEl.textContent = new Date().getFullYear();
+
+    // Load cache data on page load
+    async function loadCacheData() {
+      try {
+        const resp = await fetch('/cache', { method: 'GET' });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+        
+        // If there's cached data, populate the form
+        if (data.data && data.data.trim()) {
+          // Show Clear Cache button
+          clearCacheBtn.style.display = 'inline-block';
+          
+          // Fill textarea with cached data and disable it
+          promptEl.value = data.data;
+          promptEl.disabled = true;
+          promptEl.classList.add('disabled-control');
+          
+          // Disable image upload when cache is loaded
+          imageInput.disabled = true;
+          imageInput.style.display = 'none';
+          uploadPlaceholder.style.display = 'none';
+          previewImg.style.display = 'none';
+          removeBtn.style.display = 'none';
+          
+          // If there's a model, auto-select it and disable selection
+          if (data.model && data.model.trim()) {
+            modelEl.value = data.model;
+            modelEl.disabled = true;
+            modelEl.classList.add('disabled-control');
+            
+            // Disable direct generate button when model is locked
+            btnV1.disabled = true;
+            btnV1.classList.add('disabled-control');
+          } else {
+            // If there's data but no model, disable generate button
+            btn.disabled = true;
+            btn.classList.add('disabled-control');
+          }
+        } else {
+          // Hide Clear Cache button when no cached data
+          clearCacheBtn.style.display = 'none';
+          
+          // Enable image upload when no cache
+          imageInput.disabled = false;
+          imageInput.style.display = 'block';
+          uploadPlaceholder.style.display = 'flex';
+          
+          // No cached data, restore last selected model
+          const savedModel = localStorage.getItem('pref-model');
+          if (savedModel) {
+            modelEl.value = savedModel;
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load cache data:', err);
+        // Fallback to normal behavior
+        const savedModel = localStorage.getItem('pref-model');
+        if (savedModel) {
+          modelEl.value = savedModel;
+        }
+      }
+    }
+
+    // Load cache data on page load
+    loadCacheData();
+
+    modelEl.addEventListener('change', () => {
+      localStorage.setItem('pref-model', modelEl.value);
+    });
+
+    // Clear Cache button click handler
+    clearCacheBtn?.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('Clear Cache button clicked');
+      
+      // Show loading overlay
+      const loadingOverlay = document.getElementById('loading-overlay');
+      if (loadingOverlay) {
+        loadingOverlay.style.display = 'flex';
+      }
+      
+      try {
+        // Call clear cache API
+        const resp = await fetch('/clear', { method: 'GET' });
+        const data = await resp.json();
+        
+        if (data.success) {
+          console.log('Cache cleared successfully:', data.message);
+        } else {
+          console.error('Failed to clear cache:', data.error);
+        }
+      } catch (err) {
+        console.error('Error clearing cache:', err);
+      }
+      
+      // Wait 1 second then refresh page
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    });
+
+    // Image upload and preview (single image)
+    imageInput?.addEventListener('change', () => {
+      const file = imageInput.files && imageInput.files[0];
+      if (!file) {
+        imageBase64 = '';
+        previewImg.src = '';
+        removeBtn.style.display = 'none';
+        uploadPlaceholder.style.display = 'flex';
+        return;
+      }
+
+      // Only allow one image; clear extra if any
+      if (imageInput.files.length > 1) {
+        showError('Only one image is allowed');
+        imageInput.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result || '';
+        // result is dataURL: data:image/png;base64,xxxxx
+        if (typeof result === 'string') {
+          const commaIdx = result.indexOf(',');
+          imageBase64 = commaIdx >= 0 ? result.substring(commaIdx + 1) : result;
+          previewImg.src = result;
+          uploadPlaceholder.style.display = 'none';
+          removeBtn.style.display = 'inline-block';
+          previewImg.style.display = 'block';
+        }
+      };
+      reader.onerror = () => {
+        showError('Failed to read image');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Click placeholder to open file dialog
+    uploadPlaceholder?.addEventListener('click', () => {
+      imageInput?.click();
+    });
+
+    // Remove image and reset UI
+    removeBtn?.addEventListener('click', () => {
+      imageBase64 = '';
+      previewImg.src = '';
+      imageInput.value = '';
+      uploadPlaceholder.style.display = 'flex';
+      removeBtn.style.display = 'none';
+      previewImg.style.display = 'none';
+    });
+
+    function setLoading(isLoading) {
+      btn.disabled = isLoading;
+      statusText.classList.toggle('show', isLoading);
+      btnText.textContent = isLoading ? 'Generating…' : 'Generate';
+    }
+
+    function showError(message) {
+      resultEl.style.borderColor = 'rgba(225, 29, 72, 0.35)';
+      resultEl.textContent = 'Error: ' + message;
+      resultEl.classList.remove('loading');
+    }
+
+    function showResult(text) {
+      resultEl.style.borderColor = 'var(--border)';
+      resultEl.textContent = text;
+      resultEl.classList.remove('loading');
+      // 结果产生后，允许内容按需增长
+      resultEl.style.minHeight = '';
+    }
+
+    function showLoading() {
+      resultEl.style.borderColor = 'var(--border)';
+      resultEl.textContent = 'Loading...';
+      resultEl.classList.add('loading');
+    }
+
+    function syncResultHeight() {
+      try {
+        if (!rightCol || !resultEl) return;
+        const rect = rightCol.getBoundingClientRect();
+        const height = Math.max(0, rect.height);
+        const hasContent = (resultEl.textContent || '').trim().length > 0 && resultEl.textContent !== 'Loading...';
+        if (!hasContent) {
+          resultEl.style.minHeight = height + 'px';
+        }
+      } catch (_) {}
+    }
+
+    window.addEventListener('load', syncResultHeight);
+    window.addEventListener('resize', () => { requestAnimationFrame(syncResultHeight); });
+
+    function parseMultipleJsonObjects(input) {
+      const results = [];
+      if (typeof input !== 'string') return results;
+      // Fast path: try parse as a single JSON first
+      try {
+        const single = JSON.parse(input);
+        results.push(single);
+        return results;
+      } catch (_) {}
+      // Try extract top-level JSON objects/arrays from a concatenated string
+      let i = 0;
+      const n = input.length;
+      while (i < n) {
+        // Skip whitespace and separators
+        while (i < n && /[\s,\n\r\t]/.test(input[i])) i++;
+        if (i >= n) break;
+        const startChar = input[i];
+        if (startChar !== '{' && startChar !== '[') {
+          // Try to parse a JSON string that contains a JSON; find next brace
+          i++;
+          continue;
+        }
+        let depth = 0;
+        let inString = false;
+        let escape = false;
+        let start = i;
+        for (; i < n; i++) {
+          const ch = input[i];
+          if (inString) {
+            if (escape) { escape = false; }
+            else if (ch === '\\') { escape = true; }
+            else if (ch === '"') { inString = false; }
+            continue;
+          }
+          if (ch === '"') { inString = true; continue; }
+          if (ch === '{' || ch === '[') depth++;
+          if (ch === '}' || ch === ']') depth--;
+          if (depth === 0) {
+            // Include current char
+            const slice = input.slice(start, i + 1);
+            try {
+              results.push(JSON.parse(slice));
+            } catch (_) {}
+            i++;
+            break;
+          }
+        }
+      }
+      return results;
+    }
+
+    async function extractDisplayText(resp) {
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || ('HTTP ' + resp.status));
+      }
+      const contentType = resp.headers.get('content-type') || '';
+      let raw = '';
+      if (contentType.includes('application/json')) {
+        const data = await resp.json();
+        const payload = (data && typeof data === 'object' && 'response' in data) ? data.response : data;
+        raw = typeof payload === 'string' ? payload : JSON.stringify(payload);
+      } else {
+        raw = await resp.text();
+        // If text may still be JSON, try to extract response field
+        try {
+          const obj = JSON.parse(raw);
+          if (obj && typeof obj === 'object' && 'response' in obj) {
+            raw = typeof obj.response === 'string' ? obj.response : JSON.stringify(obj.response);
+          }
+        } catch (_) {}
+      }
+      const objs = parseMultipleJsonObjects(raw);
+      if (objs.length > 0) {
+        return objs.map(o => JSON.stringify(o, null, 2)).join('\n\n');
+      }
+      return raw;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const prompt = promptEl.value.trim();
+      const model = modelEl.value;
+      if (!prompt) {
+        showError('Please enter a prompt');
+        return;
+      }
+
+      setLoading(true);
+      showLoading();
+      try {
+        const resp = await fetch('/textgen', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(imageBase64 ? { prompt, model, image: imageBase64 } : { prompt, model })
+        });
+        const display = await extractDisplayText(resp);
+        showResult(display);
+      } catch (err) {
+        showError(err?.message || 'Request failed');
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    // Send to /textgenv1 with same payload
+    btnV1?.addEventListener('click', async () => {
+      const prompt = promptEl.value.trim();
+      const model = modelEl.value;
+      if (!prompt) {
+        showError('Please enter a prompt');
+        return;
+      }
+      // Make panels gray and non-interactive
+      setPanelsDisabled(true);
+      setLoading(true);
+      showLoading();
+      try {
+        const resp = await fetch('/textgenv1', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(imageBase64 ? { prompt, model, image: imageBase64 } : { prompt, model })
+        });
+        const display = await extractDisplayText(resp);
+        showResult(display);
+      } catch (err) {
+        showError(err?.message || 'Request failed');
+      } finally {
+        setLoading(false);
+        // Optional: keep disabled state after direct generation; comment out to re-enable
+        // setPanelsDisabled(false);
+      }
+    });
+
+    // Shortcut: Ctrl/⌘ + Enter
+    promptEl.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        form.requestSubmit();
+      }
+    });
+
+    // -------- Config & Status Logic --------
+    // Config & Status elements
+    const cfgParallel = document.getElementById('cfg-parallel');
+    const cfgRound = document.getElementById('cfg-round');
+    const cfgWait = document.getElementById('cfg-wait');
+    const cfgApply = document.getElementById('cfg-apply');
+    const cfgMessage = document.getElementById('cfg-message');
+    const statusBtn = document.getElementById('status-update');
+    const statusBox = document.getElementById('status-box');
+    const configCard = document.getElementById('config-card');
+    const statusCard = document.getElementById('status-card');
+    const initialCfg = { parallel: null, round: null, wait: null };
+
+    function toInt(value) {
+      const v = (value || '').toString().replace(/\D+/g, '');
+      return v ? parseInt(v, 10) : '';
+    }
+
+    function setState(el, state) {
+      el.classList.remove('state-ok', 'state-warn', 'state-error');
+      if (state) el.classList.add(state);
+    }
+
+    function markDirty(el, initialValue) {
+      const current = toInt(el.value);
+      const isDirty = (current !== '' && current !== initialValue);
+      setState(el, isDirty ? 'state-warn' : 'state-ok');
+    }
+
+    async function initConfig() {
+      try {
+        const resp = await fetch('/config', { method: 'GET' });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+        const parallel = data.current_parallel_count;
+        const round = data.current_round_limit;
+        const wait = data.current_max_wait_time;
+        cfgParallel.value = (parallel ?? '').toString();
+        cfgRound.value = (round ?? '').toString();
+        cfgWait.value = (wait ?? '').toString();
+        initialCfg.parallel = toInt(cfgParallel.value);
+        initialCfg.round = toInt(cfgRound.value);
+        initialCfg.wait = toInt(cfgWait.value);
+        setState(cfgParallel, 'state-ok');
+        setState(cfgRound, 'state-ok');
+        setState(cfgWait, 'state-ok');
+        cfgMessage.textContent = data.message || '';
+      } catch (e) {
+        cfgMessage.textContent = 'Failed to load config: ' + (e?.message || '');
+      }
+    }
+
+    [cfgParallel, cfgRound, cfgWait].forEach((el, idx) => {
+      el?.addEventListener('input', () => {
+        el.value = (el.value || '').replace(/\D+/g, '');
+        const init = idx === 0 ? initialCfg.parallel : idx === 1 ? initialCfg.round : initialCfg.wait;
+        markDirty(el, init);
+      });
+    });
+
+    cfgApply?.addEventListener('click', async () => {
+      const payload = {
+        parallel: toInt(cfgParallel.value) || 0,
+        round_limit: toInt(cfgRound.value) || 0,
+        max_wait_time: toInt(cfgWait.value) || 0,
+      };
+      try {
+        const resp = await fetch('/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (data && data.success === true) {
+          // Apply success: mark green and update initials
+          initialCfg.parallel = payload.parallel;
+          initialCfg.round = payload.round_limit;
+          initialCfg.wait = payload.max_wait_time;
+          setState(cfgParallel, 'state-ok');
+          setState(cfgRound, 'state-ok');
+          setState(cfgWait, 'state-ok');
+          cfgMessage.textContent = data.message || 'Updated successfully';
+        } else {
+          setState(cfgParallel, 'state-error');
+          setState(cfgRound, 'state-error');
+          setState(cfgWait, 'state-error');
+          alert(data?.message || 'Config update failed');
+        }
+      } catch (e) {
+        setState(cfgParallel, 'state-error');
+        setState(cfgRound, 'state-error');
+        setState(cfgWait, 'state-error');
+        alert('Config update failed');
+      }
+    });
+
+    // --- Panels disable control ---
+    function setPanelsDisabled(disabled) {
+      [configCard, statusCard].forEach((card) => {
+        if (!card) return;
+        card.classList.toggle('disabled', disabled);
+        const controls = card.querySelectorAll('input, button, select, textarea');
+        controls.forEach(el => { el.disabled = !!disabled; });
+      });
+    }
+
+    function renderProgressRing(current, limit) {
+      const size = 52;
+      const stroke = 6;
+      const radius = (size - stroke) / 2;
+      const circumference = 2 * Math.PI * radius;
+      const safeLimit = Number(limit) > 0 ? Number(limit) : 1;
+      const value = Math.max(0, Math.min(Number(current) || 0, safeLimit));
+      const ratio = value / safeLimit;
+      const dashoffset = circumference * (1 - ratio);
+      const cx = size / 2;
+      const cy = size / 2;
+      return `
+        <div class="progress-ring" title="Validation Rounds">
+          <svg width="${size}" height="${size}">
+            <circle class="bg" stroke-width="${stroke}" fill="transparent" r="${radius}" cx="${cx}" cy="${cy}"></circle>
+            <circle class="fg" stroke-width="${stroke}" fill="transparent" r="${radius}" cx="${cx}" cy="${cy}"
+              stroke-dasharray="${circumference}"
+              stroke-dashoffset="${dashoffset}"></circle>
+          </svg>
+          <div class="label">${value}/${safeLimit}</div>
+        </div>`;
+    }
+
+    function isArrayEmpty(arr) {
+      return !Array.isArray(arr) || arr.length === 0;
+    }
+
+    function escapeHtml(str) {
+      return (str || '').toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function renderStatus(data) {
+      try {
+        if (!data || typeof data !== 'object') {
+          statusBox.textContent = 'Invalid status payload';
+          return;
+        }
+        const isRunning = Boolean(data.is_running);
+        const currentValRound = data.current_val_round ?? 0;
+        const valRoundLimit = data.val_round_limit ?? 0;
+        const currentResults = data.current_results ?? [];
+
+        const header = `
+          <div class="status-header">
+            ${renderProgressRing(currentValRound, valRoundLimit)}
+            <div>
+              <div class="status-item"><b>Testing?</b> ${isRunning}</div>
+<!--              <div class="status-item"><b>rounds</b>: current_val_round/val_round_limit</div>-->
+            </div>
+          </div>`;
+
+        const items = [];
+        if (isRunning && isArrayEmpty(currentResults)) {
+          if (data.execution_time_seconds != null) {
+            items.push(`<div class="status-item"><b>execution_time_seconds</b>: ${Number(data.execution_time_seconds)} s</div>`);
+          }
+          if (data.total_agents != null) {
+            items.push(`<div class="status-item"><b>total_agents</b>: ${Number(data.total_agents)}</div>`);
+          }
+        } else {
+          if (data.total_tests != null) {
+            items.push(`<div class="status-item"><b>Total test cases</b>: ${Number(data.total_tests)}</div>`);
+          }
+          const sub = [];
+          if (data.completed_tests != null) sub.push(`<div>Completed ${Number(data.completed_tests)}</div>`);
+          if (data.successful_tests != null) sub.push(`<div>Success ${Number(data.successful_tests)}</div>`);
+          if (data.failed_tests != null) sub.push(`<div>Fail ${Number(data.failed_tests)}</div>`);
+          if (sub.length) {
+            items.push(`<div class="substats"><div class="row">${sub.join('')}</div></div>`);
+          }
+          if (data.current_round != null) {
+            items.push(`<div class="status-item"><b>Current round</b>: ${Number(data.current_round)}</div>`);
+          }
+          // current_results pretty block
+          const pretty = escapeHtml(JSON.stringify(currentResults, null, 2));
+          items.push(`<div class="status-item" style="grid-column: 1 / -1;"><b>Last round results</b>:</div><div class="codebox" style="grid-column: 1 / -1;">${pretty}</div>`);
+        }
+
+        const grid = items.length ? `<div class="status-items">${items.join('')}</div>` : `<div class="muted">No details</div>`;
+        statusBox.innerHTML = header + grid;
+      } catch (e) {
+        statusBox.textContent = 'Render error: ' + (e?.message || '');
+      }
+    }
+
+    statusBtn?.addEventListener('click', async () => {
+      statusBox.textContent = 'Loading...';
+      try {
+        const resp = await fetch('/status', { method: 'GET' });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+        renderStatus(data);
+      } catch (e) {
+        statusBox.textContent = 'Failed to fetch status: ' + (e?.message || '');
+      }
+    });
+
+    // Initialize config on load
+    initConfig();
+  </script>
+
+  <!-- 全屏加载覆盖层 -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div style="text-align: center;">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Clearing cache...</div>
+    </div>
+  </div>
+</body>
+</html>
+
